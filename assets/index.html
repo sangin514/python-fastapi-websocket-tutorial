@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <form onsubmit="return false">
+            <label for="username">Username</label>
+            <input type="text" id="username" autocomplete="off" placeholder="Enter your name">
+            <button onclick="connect()">Join</button>
+        </form>
+        <p id="joinedAs">
+        </p>
+        <form id="join" onsubmit="return false">
+            <label for="messageReceiver">To:</label><br>
+            <input type="text" id="messageReceiver" autocomplete="off"><br>
+
+            <label for="messageText">Message:</label><br>
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button onclick="sendMessage()">Send</button><br>
+
+            <input type="radio" id="broadcast" name="messageType" value="broadcast">
+            <label for="broadcast">Broadcast</label>
+            <input type="radio" id="direct" name="messageType" value="direct">
+            <label for="direct">DM</label>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            var ws = None
+            function connect() {
+                var username = document.getElementById('username')
+                ws = new WebSocket('ws://localhost:8000/chat/ws?user=' + username.value)
+
+                var content = document.createTextNode(`Joined as: ${username.value}`)
+                document.getElementById('joinedAs').appendChild(content)
+                username.value = ''
+
+                ws.onmessage = function(event) {
+                    text = JSON.parse(event.data)
+                    var message = document.createElement('li')
+                    var content = document.createTextNode(text.from + ': ' + text.msg)
+                    message.appendChild(content)
+                    document.getElementById('messages').appendChild(message)
+                };
+                ws.onclose = function(event) {
+                    var message = document.createElement('li')
+                    var content = document.createTextNode(`Disconnected: ${event.reason}`)
+                    message.appendChild(content)
+                    document.getElementById('messages').appendChild(message)
+                }
+
+                return false
+            }
+
+            function sendMessage() {
+                var type = document.getElementById('join').messageType.value
+                var recv = document.getElementById('messageReceiver')
+                var text = document.getElementById("messageText")
+
+                var message = {
+                    "type": type,
+                    "msg": text.value
+                }
+                if (type == 'direct') {
+                    message.to = recv.value
+                }
+
+                ws.send(JSON.stringify(message))
+
+                var message = document.createElement('li')
+                var content = document.createTextNode('Me: ' + text.value)
+                message.appendChild(content)
+                document.getElementById('messages').appendChild(message)
+
+                text.value = ''
+
+                return false
+            }
+        </script>
+    </body>
+</html>
