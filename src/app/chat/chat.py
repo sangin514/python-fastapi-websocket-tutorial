@@ -74,7 +74,7 @@ class Chat:
                         "msg": msg
                     }
                 )
-            except:
+            except KeyError:
                 src_socket = self.members[user]
                 await src_socket.send_json(
                     {
